@@ -2,7 +2,7 @@
 
 ## Use ES2015 (ES6) as well as React with JSX
 
-Some web browsers, and the Java 8 Nashorn JavaScript engine, do not support ES6 without a transpiler like [Babel](https://babeljs.io/). The purpose of this starter kit is to enable the use of ES6 and JSX in XP applications. This starter kit contains a webjar dependency that will download the React files when the app is built. It also contains the required folder structure for creating an app to run on Enonic XP. 
+Some web browsers, and the Java 8 Nashorn JavaScript engine, do not support ES6 without a transpiler like [Babel](https://babeljs.io/). The purpose of this starter kit is to enable the use of ES6 and/or JSX in XP applications. This starter kit contains a webjar dependency that will download the [React](https://facebook.github.io/react/) files when the app is built. It also contains the required folder structure for creating an app to run on Enonic XP. 
 
 ## How it works
 
@@ -11,6 +11,10 @@ This project's build.gradle file contains a task that will transpile ES6 files w
 All references to `.es6` and `.jsx` files should use the `.js` extension. For example, a client side file named `utilities.es6` would be included in a script element like this: `src="utilities.js"`
 
 Files cannot contain both ES6 and JSX.
+
+To use React in the project, include the react.min.js and react-dom.min.js files with a `<script>` element in your page. These files are included by the webjar dependency. You won't see these files in your project's `assets` folder, but they will be accessible at `/src/main/resources/assets/react/0.14.7/`.
+
+If React and JSX will not be used in your project, simply make the following edits to the build.gradle file: remove the reference to the React webjar dependency and remove references to `.jsx` and `react` in the babelJs task. Also remove the line with `babel-preset-react` in the package.json file.
 
 ## App development with continuous transpile
 
@@ -41,7 +45,7 @@ $ toolbox.bat init-project -d C:\path\to\project\directory -n com.company.myapp 
 The React files are added with a [WebJar](http://www.webjars.org/) dependency in build.gradle and will be downloaded the first time the app is built. They can be viewed in the project's `/build/webjars/META-INF/resources/react` folder, but they are accessed as if they were in the project's `assets/react/<version>/` folder. To use a different version of React, just update the version number in build.gradle (make sure that it is listed on the WebJar site). To add React manually, just remove this WebJar dependency in build.gradle. React files can then be manually added to `/src/main/resources/assets`.
 
 ```
-webjar "org.webjars:bootstrap:3.3.6"
+webjar "org.webjars:react:0.14.7"
 ```
 
 ## Copyright and license

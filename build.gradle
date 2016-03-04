@@ -35,7 +35,6 @@ dependencies {
     include "com.enonic.xp:lib-portal:${xpVersion}"
     include "com.enonic.xp:lib-thymeleaf:${xpVersion}"
     webjar "org.webjars:react:0.14.7"
-    //webjar "org.webjars:babel:6.3.26"
     //include "com.enonic.xp:lib-xslt:${xpVersion}"
     //include "com.enonic.xp:lib-mustache:${xpVersion}"
     //include "com.enonic.xp:lib-i18n:${xpVersion}"
