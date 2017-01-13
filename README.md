@@ -2,11 +2,11 @@
 
 ## Use ES2015 (ES6) as well as React with JSX
 
-Some web browsers, and the Java 8 Nashorn JavaScript engine, do not support ES6 without a transpiler like [Babel](https://babeljs.io/). The purpose of this starter kit is to enable the use of ES6 and/or JSX in XP applications. This starter kit contains a webjar dependency that will download the [React](https://facebook.github.io/react/) files when the app is built. It also contains the required folder structure for creating an app to run on Enonic XP. 
+Some web browsers, and the Java 8 Nashorn JavaScript engine, do not support ES6 without a transpiler like [Babel](https://babeljs.io/). The purpose of this starter kit is to enable the use of ES6 and/or JSX in XP applications. This starter kit contains a webjar dependency that will download the [React](https://facebook.github.io/react/) files when the app is built. It also contains the required folder structure for creating an app to run on Enonic XP.
 
 ## How it works
 
-This project's build.gradle file contains a task that will transpile ES6 files with the `.es6` extension into ES5 files with the `.js` extension. It will also transpile JSX files with the `.jsx` extension into ES5 files that end in `.js`. For example, if a part is named "my-part" then the controller should be named `my-part.es6` and it will be transpiled into `my-part.js`. The transpiled files can be found in the project's `build` folder. 
+This project's build.gradle file contains a task that will transpile ES6 files with the `.es6` extension into ES5 files with the `.js` extension. It will also transpile JSX files with the `.jsx` extension into ES5 files that end in `.js`. For example, if a part is named "my-part" then the controller should be named `my-part.es6` and it will be transpiled into `my-part.js`. The transpiled files can be found in the project's `build` folder.
 
 All references to `.es6` and `.jsx` files should use the `.js` extension. For example, a client side file named `utilities.es6` would be included in a script element like this: `src="utilities.js"`
 
@@ -38,7 +38,17 @@ $ toolbox.bat init-project -d C:\path\to\project\directory -n com.company.myapp 
 
 | Version       | XP version |
 | ------------- | ---------- |
+| 1.1.0         | 6.8.0      |
 | 1.0.0         | 6.4.0      |
+
+## Changelog
+
+### 1.1.0
+
+* Let gulp build everything except Java
+* liveReload
+* Compile sass assets
+* Compile es6/jsx assets
 
 ## WebJars
 
