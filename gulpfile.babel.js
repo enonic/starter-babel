@@ -30,7 +30,7 @@ const $           = gulpLoadPlugins();
 const app         = express();
 const proxy       = httpProxy.createProxyServer();
 const enonic      = 'http://localhost:8080';
-const expressPort = 8889;
+const expressPort = 18080;
 
 //──────────────────────────────────────────────────────────────────────────────
 // Less logging

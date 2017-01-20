@@ -33,7 +33,7 @@ export function get(request) {
     const model = {
         mode: request.mode,
         title: 'My page title',
-        watch: request.port == 8889
+        watch: request.port == 18080
     };
     log.debug(`${logPrefix} model:${toStr(model)}`);
 
