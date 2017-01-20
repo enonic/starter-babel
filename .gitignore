@@ -16,3 +16,4 @@ target/
 generated-java
 node_modules/
 /npm-debug.log
+/dist

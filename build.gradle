@@ -80,12 +80,14 @@ repositories {
 //──────────────────────────────────────────────────────────────────────────────
 
 task gulp_build(type: GulpTask, dependsOn: 'installGulp') {
-    description = 'Build using gulp'
-    args = ["--color", "--gulpfile", "gulpfile.babel.js", "build"]
+    description = 'Build for production using gulp'
+    args = ["--color", "--gulpfile", "gulpfile.babel.js", "prod"]
 }
 
+
+// TODO: Does gulp watch block for gradle continous?
 task gulp_watch(type: GulpTask, dependsOn: 'installGulp') {
-    description = 'Build using gulp'
+    description = 'Build for development and watch using gulp'
     args = ["--color", "--gulpfile", "gulpfile.babel.js", "watch"]
 }
 
