@@ -49,33 +49,41 @@ const dstSiteDir      = `${dstResourcesDir}/site`;
 
 const srcGlob    = srcResourcesDir + '/**/*.*'; // Not folders
 const ignoreGlob = srcResourcesDir + '/**/*.{es6,js,jsx,scss}';
-const srcFiles   = glob.sync(srcGlob, { absolute: false });
-const copyFiles  = glob.sync(srcGlob, { absolute: false, ignore: ignoreGlob });
+const srcFiles   = glob.sync(srcGlob, { absolute: true });
+const copyFiles  = glob.sync(srcGlob, { absolute: true, ignore: ignoreGlob });
 
 const scssGlob       = srcResourcesDir + '/**/*.scss';
 const mainScssGlob   = srcResourcesDir + '/assets/styles.scss';
-const mainScssFile   = glob.sync(mainScssGlob, { absolute: false })[0];
-const scssFiles      = glob.sync(scssGlob, { absolute: false });
+const mainScssFile   = glob.sync(mainScssGlob, { absolute: true })[0];
+const scssFiles      = glob.sync(scssGlob, { absolute: true, ignore: mainScssGlob }); // Ignore main or main task becomes overridden
 
 const mainBabelAssetGlob = srcResourcesDir + '/assets/scripts.asset.es6';
 const babelAssetsGlob    = srcResourcesDir + '/**/*.asset.{es6,jsx}';
 const babelGlob          = srcResourcesDir + '/**/*.{es6,jsx}';
-const mainBabelAssetFile = glob.sync(mainBabelAssetGlob, { absolute: false })[0];
-const babelAssetFiles    = glob.sync(babelAssetsGlob, { absolute: false });
-const babelFiles         = glob.sync(babelGlob, { absolute: false, ignore: babelAssetsGlob });
+const mainBabelAssetFile = glob.sync(mainBabelAssetGlob, { absolute: true })[0];
+const babelAssetFiles    = glob.sync(babelAssetsGlob, { absolute: true, ignore: mainBabelAssetGlob }); // Ignore main or main task becomes overridden
+const babelFiles         = glob.sync(babelGlob, { absolute: true, ignore: babelAssetsGlob });
 
-const nodeModulesFiles = Object.keys(packageJson.dependencies||[]).map(module => {
-    return glob.sync(`./node_modules/${module}/**/*.js` , { absolute: false })[0];
-});
+const nodeModules          = Object.keys(packageJson.dependencies||[]);
+const nodeModuleDirs       = nodeModules.map(nodeModule => glob.sync(`./node_modules/${nodeModule}`, { absolute: true })[0]);
+const prodNodeModuleTasks  = nodeModuleDirs.map(nodeModuleDir => `prod:${nodeModuleDir}`);
+const devNodeModuleTasks   = nodeModuleDirs.map(nodeModuleDir => `dev:${nodeModuleDir}`);
+const watchNodeModuleTasks = nodeModuleDirs.map(nodeModuleDir => `dev:${nodeModuleDir}`);
+const nodeModulesFiles     = [].concat.apply([],
+    nodeModules.map(module => {
+        return glob.sync(`./node_modules/${module}/**/*.js` , { absolute: true });
+    })
+);
+//$.util.log('nodeModules:', nodeModules); // Util log does not list all entries.
+//console.log(`nodeModulesFiles:${JSON.stringify(nodeModulesFiles, null, 4)}`);
+//process.exit();
 
 // Let's put asyncronous tasks first, so they can finish while syncronous tasks are running.
-const prodFiles  = copyFiles.concat(nodeModulesFiles, babelFiles, mainScssFile, mainBabelAssetFile);
+const prodFiles  = copyFiles.concat(babelFiles, mainScssFile, mainBabelAssetFile);
 const devFiles   = prodFiles;
-const watchFiles = copyFiles.concat(nodeModulesFiles, babelFiles, scssFiles, babelAssetFiles);
-//$.util.log('watchFiles:', watchFiles); process.exit();
-const prodTasks  = prodFiles.map( f => `prod:${f}` );
-const devTasks   = devFiles.map(  f => `dev:${f}`  );
-const watchTasks = watchFiles.map(f => `watch:${f}`);
+const watchFiles = devFiles.concat(nodeModulesFiles, scssFiles, babelAssetFiles);
+const prodTasks  = prodNodeModuleTasks.concat( prodFiles.map( f => `prod:${f}` ));
+const devTasks   = devNodeModuleTasks.concat(  devFiles.map(  f => `dev:${f}`  ));
 
 //──────────────────────────────────────────────────────────────────────────────
 // xml, html, svg, etc...
@@ -105,13 +113,21 @@ copyFiles.forEach(filePath => {
 //──────────────────────────────────────────────────────────────────────────────
 // Copy package.json dependencies
 //──────────────────────────────────────────────────────────────────────────────
-nodeModulesFiles.forEach(filePath => {
+nodeModuleDirs.forEach(nodeModuleDir => {
     const base = 'node_modules';
     const dest = `${dstSiteDir}/lib/`;
+    const jsFilesInNodeModule = glob.sync(`${nodeModuleDir}/**/*.js` , { absolute: true });
     // These can be asyncronous, so do not return anything:
-    gulp.task(`prod:${filePath}`,  () => { copyResource({ filePath, base, dest }); });
-    gulp.task(`dev:${filePath}`,   () => { copyResource({ filePath,  base, dest, env: 'dev' }); });
-    gulp.task(`watch:${filePath}`, () => { copyResource({ filePath,  base, dest, env: 'dev', liveReload: true }); });
+    gulp.task(`prod:${nodeModuleDir}`,  () => { jsFilesInNodeModule.forEach(filePath => { copyResource({ filePath, base, dest }); }); });
+    gulp.task(`dev:${nodeModuleDir}`,   () => { jsFilesInNodeModule.forEach(filePath => { copyResource({ filePath, base, dest, env: 'dev' }); }); });
+    // This must be syncronous, so return callback:
+    // This becomes a lot for liveReloads, but it seems one cannot liveReload a list, so I guess thats fine for now.
+    gulp.task(`watch:${nodeModuleDir}`, (done) => { jsFilesInNodeModule.forEach(filePath => { copyResource({ filePath, base, dest, env: 'dev', liveReload: true }); }); done(); });
+});
+
+nodeModulesFiles.forEach(filePath => {
+    const nodeModuleDirFromFilePath = glob.sync('node_modules/' + filePath.replace(/^.*?node_modules\//, '').replace(/\/.*$/,'') , { absolute: true })[0];
+    gulp.task(`watch:${filePath}`, (done) => { gulp.start(`watch:${nodeModuleDirFromFilePath}`); done(); });
 });
 
 //──────────────────────────────────────────────────────────────────────────────
@@ -198,20 +214,21 @@ function webPackResource({
         plugins,
     }, webpack))
         .pipe(gulp.dest(`${dstResourcesDir}/site/assets/js/`));
-    if(env === 'dev') { stream = stream.pipe(gulp.dest('./dist/js/')); }
     if(liveReload) { stream = stream.pipe($.livereload()); }
+    if(env === 'dev') {
+        stream = stream.pipe(gulp.dest('./dist/js/'));
+        if(liveReload) { stream = stream.pipe($.livereload()); }
+    }
     return stream;
 }
 
 // Must be syncronous, so task doesn't finish before webPack, thus return the stream:
 gulp.task(`prod:${mainBabelAssetFile}`,  () => { return webPackResource({ filePath: mainBabelAssetFile }); });
 gulp.task(`dev:${mainBabelAssetFile}`,   () => { return webPackResource({ filePath: mainBabelAssetFile, env: 'dev' }); });
-gulp.task(`watch:${mainBabelAssetFile}`, () => { return webPackResource({ filePath: mainBabelAssetFile, env: 'dev', liveReload: true }); });
+gulp.task(`watch:${mainBabelAssetFile}`, (done) => { webPackResource({ filePath: mainBabelAssetFile, env: 'dev', liveReload: true }); done(); });
 
 babelAssetFiles.forEach(babelAssetFile => {
-    //gulp.task(`prod:${babelAssetFile}`,  [`prod:${mainBabelAssetFile}` ], () => { return; });
-    //gulp.task(`dev:${babelAssetFile}`,   [`dev:${mainBabelAssetFile}`  ], () => { return; });
-    gulp.task(`watch:${babelAssetFile}`, [`watch:${mainBabelAssetFile}`], () => { return; });
+    gulp.task(`watch:${babelAssetFile}`, (done) => { gulp.start(`watch:${mainBabelAssetFile}`); done(); });
 });
 
 //──────────────────────────────────────────────────────────────────────────────
@@ -231,28 +248,29 @@ function compileScssFile({
         includePaths: '..'
     }
 }) {
-    let stream = gulp.src(mainScssFile);
+    let stream = gulp.src(filePath);
     if(sourcemaps) { stream = stream.pipe($.sourcemaps.init()); }
     stream = stream.pipe($.sassGlob())
         .pipe($.sass(sassOptions).on('error', $.sass.logError))
         .pipe($.autoprefixer(autoprefixerOptions));
     if(sourcemaps) { stream = stream.pipe($.sourcemaps.write()); }
     stream = stream.pipe(gulp.dest(`${dstSiteDir}/assets/css/`));
-    if (env === 'dev') { stream = stream.pipe(gulp.dest('./dist/css/')); }
     if(liveReload) { stream = stream.pipe($.livereload()); }
+    if (env === 'dev') {
+        stream = stream.pipe(gulp.dest('./dist/css/'));
+        if(liveReload) { stream = stream.pipe($.livereload()); }
+    }
     // $.livereload.changed(`${dest}/styles.css`');
     return stream;
 }
 
-gulp.task(`prod:${mainScssFile}`,  () => { compileScssFile({mainScssFile}); });
-gulp.task(`dev:${mainScssFile}`,   () => { compileScssFile({mainScssFile, env: 'dev'}); });
+gulp.task(`prod:${mainScssFile}`,  () => { compileScssFile({ filePath: mainScssFile }); });
+gulp.task(`dev:${mainScssFile}`,   () => { compileScssFile({ filePath: mainScssFile, env: 'dev' }); });
 // Must be syncronous, so scssWatchTasks don't complete before them, thus return the stream:
-gulp.task(`watch:${mainScssFile}`, () => { return compileScssFile({mainScssFile, env: 'dev', liveReload: true}); });
+gulp.task(`watch:${mainScssFile}`, () => { return compileScssFile({ filePath: mainScssFile, env: 'dev', liveReload: true }); });
 
 scssFiles.forEach(scssFile => {
-    //gulp.task(`prod:${scssFile}`,  [`prod:${mainScssFile}` ], () => { return; });
-    //gulp.task(`dev:${scssFile}`,   [`dev:${mainScssFile}`  ], () => { return; });
-    gulp.task(`watch:${scssFile}`, [`watch:${mainScssFile}`], () => { return; });
+    gulp.task(`watch:${scssFile}`, (done) => { gulp.start(`watch:${mainScssFile}`); done(); });
 });
 
 //──────────────────────────────────────────────────────────────────────────────
