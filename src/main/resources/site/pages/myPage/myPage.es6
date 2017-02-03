@@ -1,5 +1,5 @@
 //import { toStr } from '/lib/enonic/util';
-import { getContent, getSiteConfig } from 'xp/portal';
+import { assetUrl, getContent, getSiteConfig } from 'xp/portal';
 import { render } from 'xp/thymeleaf';
 
 
@@ -37,8 +37,15 @@ export function get(request) {
     };
     log.debug(`${logPrefix} model:${toStr(model)}`);
 
-    return {
-        body: render(viewFile, model)
+    const res = {
+        body: render(viewFile, model),
+        pageContributions: {
+            bodyEnd: [
+                `<script src="${assetUrl({ path: 'js/scripts.js' })}" type="text/javascript"></script>`
+            ]
+        }
     }
+    //log.debug(`${logPrefix} res.pageContributions:${toStr(res.pageContributions)}`);
+    return res;
 
 } // function get
