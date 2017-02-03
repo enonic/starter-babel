@@ -49,6 +49,8 @@ $ toolbox.bat init-project -d C:\path\to\project\directory -n com.company.myapp 
 * liveReload
 * Compile sass assets
 * Compile es6/jsx assets
+* Copy node modules which are direct dependencies in package.json
+* Different build options for production and development
 
 ## WebJars
 
