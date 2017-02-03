@@ -16,9 +16,14 @@ To use React in the project, include the react.min.js and react-dom.min.js files
 
 If React and JSX will not be used in your project, simply make the following edits to the build.gradle file: remove the reference to the React webjar dependency and remove references to `.jsx` and `react` in the babelJs task. Also remove the line with `babel-preset-react` in the package.json file.
 
-## App development with continuous transpile
+## App development with continuous transpile and live reload
 
-Even when XP is started in dev-mode, transpiling does not occur upon changes to `.es6` or `.jsx` files. But these files can be watched so that the `babelJs` task will be run automatically. Open the terminal and enter `./gradlew -Pwatch babelJs`. There should be at least one change in a watched file before running the task with `-Pwatch` or else the task may complete and stop watching as expected.
+TIPS: If you have set the environment variable `$XP_INSTALL` to your xp installation directory, you can't start the Enonic XP server in development mode by entering `npm run dev` in a terminal.
+
+Even when XP is started in dev-mode, transpiling does not occur upon changes to `.es6` or `.jsx` files.
+So we use gulp to watch the files and transpile them automatically on changes.
+
+Open a terminal and enter `npm run gwatch` to start watching for changes. As long as watch is running you can also get live reload in the browser. In the browser url field simply prefix the port number with a `1`, such that it says `18080` instead of just `8080`.
 
 ## Installation
 
