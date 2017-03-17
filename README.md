@@ -43,7 +43,7 @@ $ toolbox.bat init-project -d C:\path\to\project\directory -n com.company.myapp 
 
 | Version       | XP version |
 | ------------- | ---------- |
-| 1.1.0         | 6.8.0      |
+| 1.1.0         | 6.9.2      |
 | 1.0.0         | 6.4.0      |
 
 ## Changelog
