@@ -1,5 +1,21 @@
 # Babel Starter for Enonic XP
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+
+- [Use ES2015 (ES6) as well as React with JSX](#use-es2015-es6-as-well-as-react-with-jsx)
+- [How it works](#how-it-works)
+- [App development with continuous transpile and live reload](#app-development-with-continuous-transpile-and-live-reload)
+- [Installation](#installation)
+- [Compatibility](#compatibility)
+- [Changelog](#changelog)
+  - [1.1.0](#110)
+- [WebJars](#webjars)
+- [Copyright and license](#copyright-and-license)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## Use ES2015 (ES6) as well as React with JSX
 
 Some web browsers, and the Java 8 Nashorn JavaScript engine, do not support ES6 without a transpiler like [Babel](https://babeljs.io/). The purpose of this starter kit is to enable the use of ES6 and/or JSX in XP applications. This starter kit contains a webjar dependency that will download the [React](https://facebook.github.io/react/) files when the app is built. It also contains the required folder structure for creating an app to run on Enonic XP.
