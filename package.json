@@ -33,7 +33,6 @@
   "scripts": {
     "build": "./gradlew build;",
     "clean": "./gradlew clean;",
-    "dev": "npm run server dev;",
     "deploy": "npm run install-app;",
     "gulp": "./node_modules/.bin/gulp",
     "gulper": "./node_modules/.bin/gulper",
@@ -41,8 +40,8 @@
     "gprod": "npm run gulp prod;",
     "gwatch": "npm run gulper watch;",
     "install-app": "echo build/libs/*.jar|xargs -n1 $XP_INSTALL/toolbox/toolbox.sh install-app -a su:password -f ;",
-    "server": "$XP_INSTALL/bin/server.sh",
-    "start": "npm run server;",
+    "xp": "$XP_INSTALL/bin/server.sh;",
+    "xp:dev": "$XP_INSTALL/bin/server.sh dev;",
     "toolbox": "$XP_INSTALL/toolbox/toolbox.sh",
     "watch": "./gradlew gulp_watch;",
     "yarn": "./node_modules/.bin/yarn"
