@@ -60,16 +60,25 @@ export function get(request) {
         log.debug(`${logPrefix} queryResult:${toStr(queryResult)}`);
     } catch (e) { handleError(e); }
 
+    let nodeId;
+    let nodeName = 'myName';
+    const nodePath = `/${nodeName}`;
     let createNodeResult;
     try {
         createNodeResult = repoConnection.create({
-            _name: "myName",
+            _name: nodeName,
             displayName: "This is brand new node"
         });
         log.debug(`${logPrefix} createNodeResult:${toStr(createNodeResult)}`);
-    } catch (e) { handleError(e); }
+        nodeId = createNodeResult._id;
+    } catch (e) {
+        if(e.class.name === 'com.enonic.xp.node.NodeAlreadyExistAtPathException') {
+            nodeId = repoConnection.get(nodePath)._id;
+        } else {
+            return handleError(e);
+        }
+    }
 
-    const nodeId = createNodeResult._id;
 
     let getNodeResult;
     try {
