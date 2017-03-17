@@ -41,7 +41,7 @@ app {
 }
 
 node {
-    version = '7.2.1'
+    version = '7.6.0'
     // If true, it will download node using above parameters.
     // If false, it will try to use globally installed node.
     download = true
