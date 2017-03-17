@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="no">
+    <head>
+        <meta charset="UTF-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <title data-th-text="${title}"></title>
+        <th:block data-th-if="${watch}">
+            <script src="//localhost:35729/livereload.js?snipver=1" async="" defer=""></script>
+        </th:block>
+    </head>
+    <body>
+        <h1 data-th-text="${title}"></h1>
+        <h2 data-th-text="'Status: ' + ${status}"></h2>
+        <ul>
+            <li data-th-each="message : ${messages}" data-th-text="${message}"></li>
+        </ul>
+    </body>
+</html>
