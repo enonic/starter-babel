@@ -77,8 +77,9 @@ const config = {
             'build/**/*',
             'dist/**/*',
             'gradle/**/*',
-            'node_modules/**/*.!(js|json)', // Files that are not js or json
-            'node_modules/**/!(*.*)', // Files without extention
+            'node_modules/**/*', // Node modules are handeled seperately
+            //'node_modules/**/*.!(js|json)', // Files that are not js or json
+            //'node_modules/**/!(*.*)', // Files without extention
             'src/main/java/**/*',
             '**/*.gitkeep'
         ]
@@ -196,7 +197,7 @@ allFiles.forEach(srcRelFilePath => {
             });
             break;
 
-        case config.regexp.nodeModules.test(srcRelFilePath): break; // Node modules are handeled seperately
+        //case config.regexp.nodeModules.test(srcRelFilePath): break; // Node modules are handeled seperately
 
         // Unhandeled leftovers, warn on watch
         //case /\//.test(srcRelFilePath): console.log('What do do with this file is not defined:' + srcRelFilePath); break; // Any left over files in folders
