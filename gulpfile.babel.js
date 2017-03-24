@@ -233,6 +233,7 @@ function transpileResource({
     liveReload   = isWatch,
     env          = isProd ? 'prod' : 'dev',
     plumber      = env === 'dev' ? true : false,
+    plugins      = [],
     presets      = [
         [
             'es2015', {
@@ -245,11 +246,13 @@ function transpileResource({
         comments: true,
         compact:  false,
         minified: false,
+        plugins,
         presets
     } : {
         comments: false,
         compact:  true,
         minified: true,
+        plugins,
         presets
     }
 }) {
@@ -271,6 +274,7 @@ function webPackResource({
     babelComments = env === 'dev' ? true : false,
     compact       = env === 'dev' ? false : true,
     minified      = env === 'dev' ? false : true,
+    babelPlugins  = [],
     presets       = [
         [
             'es2015', {
@@ -283,11 +287,13 @@ function webPackResource({
         comments: babelComments,
         compact,
         minified,
+        plugins: babelPlugins,
         presets
     } : {
         comments: babelComments,
         compact,
         minified,
+        plugins: babelPlugins,
         presets
     },
     uglify        = env === 'dev' ? false : true,
