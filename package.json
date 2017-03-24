@@ -27,6 +27,7 @@
   },
   "license": "Apache-2.0",
   "name": "enonic-xp-starter-babel",
+  "private": "true",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/enonic/starter-babel"
