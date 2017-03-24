@@ -1,6 +1,7 @@
 'use strict';
+//──────────────────────────────────────────────────────────────────────────────
+// Information
 /*──────────────────────────────────────────────────────────────────────────────
-
  There are currently three main tasks:
  - prod  : no-comments, minify, sourcemaps, uglify
  - dev   : comments, no-minify, no-sourcemap, no-uglify
@@ -16,21 +17,101 @@
   to run tasks synchronously, but that does not work. Instead return the
   actual task and gulp knows on its own when it's done.
 
-──────────────────────────────────────────────────────────────────────────────*/
+ Notes:
+ - KISS define single mainScssFile and single mainAssetJsFile
+ - short paths in STDOUT
+ - prod and dev tasks are destination files.
+ - watch tasks are source files, which depends on source files.
 
+ Node modules:
+ - Only copy modules listed in config (and in the future their dependencies)
+ - If the module is missing in the node_modules/ directory build should fail.
+*/
+
+//──────────────────────────────────────────────────────────────────────────────
+// Configuration
+//──────────────────────────────────────────────────────────────────────────────
+const config = {
+    enonic:      'http://localhost:8080',
+    expressPort: 18080,
+
+    mainScss:       'src/main/resources/assets/styles.scss',
+    mainBabelAsset: 'src/main/resources/assets/scripts.asset.es6',
+
+    regexp: {
+        //ignore:      /^$/,
+        copy:        /^src\/.*\.(html|xml)$/,
+        scss:        /^src\/.*\.scss$/,
+        webpack:     /^src\/.*asset.*\.es6$/,
+        transpile:   /^src\/.*\.es6$/,
+        nodeModules: /^node_modules\/.*\.(js|json)$/,
+    },
+
+    node: {
+      serverSide: [
+        'moment'
+      ]
+    },
+
+    glob: {
+        ignore: [
+            '.babelrc',
+            '.editorconfig',
+            '.gitignore',
+            '.node-version',
+            '.sass-lint.yml',
+            '.yarnclean',
+            'build.gradle',
+            'gradle.properties',
+            'gradlew',
+            'gradlew.bat',
+            'gulpfile.babel.js', // gulper restarts on change of this file
+            'npm-debug.log',
+            'package.json',
+            'LICENSE',
+            'LICENSE.txt',
+            'README.md',
+            'yarn.lock',
+            '.git/**/*',
+            '.gradle/**/*',
+            'build/**/*',
+            'dist/**/*',
+            'gradle/**/*',
+            'node_modules/**/*.!(js|json)', // Files that are not js or json
+            'node_modules/**/!(*.*)', // Files without extention
+            'src/main/java/**/*',
+            '**/*.gitkeep'
+        ]
+    }
+};
+
+//──────────────────────────────────────────────────────────────────────────────
+// Imports
+//──────────────────────────────────────────────────────────────────────────────
 import packageJson     from './package.json';
 import express         from 'express';
-import glob            from 'glob';
-import gulp            from 'gulp';
+import Glob            from 'glob';
+import Gulp            from 'gulp';
 import gulpLoadPlugins from 'gulp-load-plugins';
-import httpProxy       from 'http-proxy';
+import HttpProxy       from 'http-proxy';
 import webpack         from 'webpack';
 
+//──────────────────────────────────────────────────────────────────────────────
+// Constants
+//──────────────────────────────────────────────────────────────────────────────
 const $           = gulpLoadPlugins();
 const app         = express();
-const proxy       = httpProxy.createProxyServer();
-const enonic      = 'http://localhost:8080';
-const expressPort = 18080;
+const proxy       = HttpProxy.createProxyServer();
+
+const srcNodeModulesRelDir = 'node_modules';
+const srcResourcesDir      = 'src/main/resources';
+
+const dstResourcesDir      = 'build/resources/main';
+const dstSiteDir           = `${dstResourcesDir}/site`;
+const dstNodeModulesRelDir = `${dstResourcesDir}/lib`;
+
+const isProd               = $.util.env._.includes('prod');
+const isWatch              = $.util.env._.includes('watch');
 
 //──────────────────────────────────────────────────────────────────────────────
 // Less logging
@@ -43,47 +124,85 @@ $.util.log = function() {
     }
 };*/
 
-const srcResourcesDir = 'src/main/resources';
-const dstResourcesDir = 'build/resources/main';
-const dstSiteDir      = `${dstResourcesDir}/site`;
+const allFiles = Glob.sync('**/*', {
+    absolute: false,
+    dot: true, // Include hidden files
+    ignore: config.glob.ignore,
+    nodir: true
+});
+//console.log(allFiles); process.exit();
 
-const srcGlob    = srcResourcesDir + '/**/*.*'; // Not folders
-const ignoreGlob = srcResourcesDir + '/**/*.{es6,js,jsx,scss}';
-const srcFiles   = glob.sync(srcGlob, { absolute: true });
-const copyFiles  = glob.sync(srcGlob, { absolute: true, ignore: ignoreGlob });
+let dstAbsFilePaths = new Map();
+allFiles.forEach(srcRelFilePath => {
+    const srcAbsFilePath   = Glob.sync(srcRelFilePath, { absolute: true })[0]; // Note: Glob does not work on files that don't exist yet...
+    const dstShortFilePath = srcRelFilePath.replace(`${srcResourcesDir}/`, '');
+    const dstRelFilePath   = `${dstResourcesDir}/${dstShortFilePath}`;
+    const dstAbsFilePath   = srcAbsFilePath.replace(srcResourcesDir, dstResourcesDir);
 
-const scssGlob       = srcResourcesDir + '/**/*.scss';
-const mainScssGlob   = srcResourcesDir + '/assets/styles.scss';
-const mainScssFile   = glob.sync(mainScssGlob, { absolute: true })[0];
-const scssFiles      = glob.sync(scssGlob, { absolute: true, ignore: mainScssGlob }); // Ignore main or main task becomes overridden
+    switch (true) {
+        //case config.regexp.ignore.test(srcRelFilePath): break;
 
-const mainBabelAssetGlob = srcResourcesDir + '/assets/scripts.asset.es6';
-const babelAssetsGlob    = srcResourcesDir + '/**/*.asset.{es6,jsx}';
-const babelGlob          = srcResourcesDir + '/**/*.{es6,jsx}';
-const mainBabelAssetFile = glob.sync(mainBabelAssetGlob, { absolute: true })[0];
-const babelAssetFiles    = glob.sync(babelAssetsGlob, { absolute: true, ignore: mainBabelAssetGlob }); // Ignore main or main task becomes overridden
-const babelFiles         = glob.sync(babelGlob, { absolute: true, ignore: babelAssetsGlob });
+        case config.regexp.copy.test(srcRelFilePath):
+            dstAbsFilePaths.set(dstAbsFilePath, {
+                action: 'copy',
+                dstRelFilePath,
+                dstShortFilePath,
+                srcRelFilePath
+            });
+            break;
 
-const nodeModules          = Object.keys(packageJson.dependencies||[]);
-const nodeModuleDirs       = nodeModules.map(nodeModule => glob.sync(`./node_modules/${nodeModule}`, { absolute: true })[0]);
-const prodNodeModuleTasks  = nodeModuleDirs.map(nodeModuleDir => `prod:${nodeModuleDir}`);
-const devNodeModuleTasks   = nodeModuleDirs.map(nodeModuleDir => `dev:${nodeModuleDir}`);
-const watchNodeModuleTasks = nodeModuleDirs.map(nodeModuleDir => `dev:${nodeModuleDir}`);
-const nodeModulesFiles     = [].concat.apply([],
-    nodeModules.map(module => {
-        return glob.sync(`./node_modules/${module}/**/*.js` , { absolute: true });
-    })
-);
-//$.util.log('nodeModules:', nodeModules); // Util log does not list all entries.
-//console.log(`nodeModulesFiles:${JSON.stringify(nodeModulesFiles, null, 4)}`);
-//process.exit();
+        case config.mainScss === srcRelFilePath:
+            dstAbsFilePaths.set(dstAbsFilePath.replace(/scss$/, 'css'), {
+                action: 'compileScss',
+                dstRelFilePath: dstRelFilePath.replace(/scss$/, 'css'),
+                dstShortFilePath: dstShortFilePath.replace(/scss$/, 'css'),
+                srcRelFilePath
+            });
+            break;
 
-// Let's put asyncronous tasks first, so they can finish while syncronous tasks are running.
-const prodFiles  = copyFiles.concat(babelFiles, mainScssFile, mainBabelAssetFile);
-const devFiles   = prodFiles;
-const watchFiles = devFiles.concat(nodeModulesFiles, scssFiles, babelAssetFiles);
-const prodTasks  = prodNodeModuleTasks.concat( prodFiles.map( f => `prod:${f}` ));
-const devTasks   = devNodeModuleTasks.concat(  devFiles.map(  f => `dev:${f}`  ));
+        case config.regexp.scss.test(srcRelFilePath):
+            dstAbsFilePaths.set(dstAbsFilePath, {
+                action: 'watch',
+                depend: config.mainScss.replace(`${srcResourcesDir}/`, '').replace(/scss$/, 'css'),
+                srcRelFilePath,
+                srcShortFilePath: srcRelFilePath.replace(`${srcResourcesDir}/`, '')
+            });
+            break;
+
+        case config.mainBabelAsset === srcRelFilePath:
+            dstAbsFilePaths.set(dstAbsFilePath.replace(/asset.es6$/, 'js'), {
+                action: 'webpack',
+                dstRelFilePath: dstRelFilePath.replace(/asset.es6$/, 'js'),
+                dstShortFilePath: dstShortFilePath.replace(/asset.es6$/, 'js'),
+                srcRelFilePath
+            });
+            break;
+
+        case config.regexp.webpack.test(srcRelFilePath):
+            dstAbsFilePaths.set(dstAbsFilePath, {
+                action: 'watch',
+                depend: config.mainBabelAsset.replace(`${srcResourcesDir}/`, '').replace(/asset.es6$/, 'js'),
+                srcRelFilePath,
+                srcShortFilePath: srcRelFilePath.replace(`${srcResourcesDir}/`, '')
+            });
+            break;
+
+        case config.regexp.transpile.test(srcRelFilePath):
+            dstAbsFilePaths.set(dstAbsFilePath.replace(/es6$/, 'js'), {
+                action: 'transpile',
+                dstRelFilePath: dstRelFilePath.replace(/es6$/, 'js'),
+                dstShortFilePath: dstShortFilePath.replace(/es6$/, 'js'),
+                srcRelFilePath
+            });
+            break;
+
+        case config.regexp.nodeModules.test(srcRelFilePath): break; // Node modules are handeled seperately
+
+        // Unhandeled leftovers, warn on watch
+        //case /\//.test(srcRelFilePath): console.log('What do do with this file is not defined:' + srcRelFilePath); break; // Any left over files in folders
+        default: console.log(srcRelFilePath); // Files in root
+    }
+});
 
 //──────────────────────────────────────────────────────────────────────────────
 // xml, html, svg, etc...
@@ -92,43 +211,16 @@ function copyResource({
     filePath,
     base       = srcResourcesDir,
     dest       = dstResourcesDir,
-    env        = 'prod',
+    env        = isProd ? 'prod' : 'dev',
     plumber    = env === 'dev' ? true : false,
-    liveReload = false
+    liveReload = isWatch
 }) {
-    let stream = gulp.src(filePath, { base });
+    let stream = Gulp.src(filePath, { base });
     if(plumber) { stream = stream.pipe($.plumber()); }
-    stream = stream.pipe(gulp.dest(dest));
+    stream = stream.pipe(Gulp.dest(dest));
     if(liveReload) { stream = stream.pipe($.livereload()); }
     return stream;
 }
-
-// These can be asyncronous, so do not return anything:
-copyFiles.forEach(filePath => {
-    gulp.task(`prod:${filePath}`,  () => { copyResource({filePath}); });
-    gulp.task(`dev:${filePath}`,   () => { copyResource({filePath, env: 'dev'}); });
-    gulp.task(`watch:${filePath}`, () => { copyResource({filePath, env: 'dev', liveReload: true}) });
-});
-
-//──────────────────────────────────────────────────────────────────────────────
-// Copy package.json dependencies
-//──────────────────────────────────────────────────────────────────────────────
-nodeModuleDirs.forEach(nodeModuleDir => {
-    const base = 'node_modules';
-    const dest = `${dstSiteDir}/lib/`;
-    const jsFilesInNodeModule = glob.sync(`${nodeModuleDir}/**/*.js` , { absolute: true });
-    // These can be asyncronous, so do not return anything:
-    gulp.task(`prod:${nodeModuleDir}`,  () => { jsFilesInNodeModule.forEach(filePath => { copyResource({ filePath, base, dest }); }); });
-    gulp.task(`dev:${nodeModuleDir}`,   () => { jsFilesInNodeModule.forEach(filePath => { copyResource({ filePath, base, dest, env: 'dev' }); }); });
-    // This must be syncronous, so return callback:
-    // This becomes a lot for liveReloads, but it seems one cannot liveReload a list, so I guess thats fine for now.
-    gulp.task(`watch:${nodeModuleDir}`, (done) => { jsFilesInNodeModule.forEach(filePath => { copyResource({ filePath, base, dest, env: 'dev', liveReload: true }); }); done(); });
-});
-
-nodeModulesFiles.forEach(filePath => {
-    const nodeModuleDirFromFilePath = glob.sync('node_modules/' + filePath.replace(/^.*?node_modules\//, '').replace(/\/.*$/,'') , { absolute: true })[0];
-    gulp.task(`watch:${filePath}`, (done) => { gulp.start(`watch:${nodeModuleDirFromFilePath}`); done(); });
-});
 
 //──────────────────────────────────────────────────────────────────────────────
 // Serverside es6 -> js
@@ -137,8 +229,8 @@ function transpileResource({
     filePath,
     base         = srcResourcesDir,
     dest         = dstResourcesDir,
-    liveReload   = false,
-    env          = 'prod',
+    liveReload   = isWatch,
+    env          = isProd ? 'prod' : 'dev',
     plumber      = env === 'dev' ? true : false,
     babelOptions = env === 'dev' ? {
         comments: true,
@@ -152,27 +244,20 @@ function transpileResource({
         presets:  ['es2015', 'react']
     }
 }) {
-    let stream = gulp.src(filePath, { base });
+    let stream = Gulp.src(filePath, { base });
     if(plumber) { stream = stream.pipe($.plumber()); }
-    stream = stream.pipe($.babel(babelOptions)).pipe(gulp.dest(dest));
+    stream = stream.pipe($.babel(babelOptions)).pipe(Gulp.dest(dest));
     if(liveReload) { stream = stream.pipe($.livereload()); }
     return stream;
 }
-
-// These can be asyncronous, so do not return anything:
-babelFiles.forEach(function (filePath) {
-    gulp.task(`prod:${filePath}`,  () => { transpileResource({filePath}); });
-    gulp.task(`dev:${filePath}`,   () => { transpileResource({filePath, env: 'dev'}); });
-    gulp.task(`watch:${filePath}`, () => { transpileResource({filePath, env: 'dev', liveReload: true}); });
-});
 
 //──────────────────────────────────────────────────────────────────────────────
 // Client-side es6, jsx -> js
 //──────────────────────────────────────────────────────────────────────────────
 function webPackResource({
     filePath,
-    liveReload    = false,
-    env           = 'prod',
+    liveReload    = isWatch,
+    env           = isProd ? 'prod' : 'dev',
     plumber       = env === 'dev' ? true : false,
     babelComments = env === 'dev' ? true : false,
     compact       = env === 'dev' ? false : true,
@@ -200,7 +285,7 @@ function webPackResource({
     filename      = (uglify && minimize) ? 'scripts.min.js' : 'scripts.js'
 }) {
     //$.util.log('uglifyOptions:', uglifyOptions);
-    let stream = gulp.src(filePath);
+    let stream = Gulp.src(filePath);
     if(plumber) { stream = stream.pipe($.plumber()); }
     stream = stream.pipe($.webpack({
         module: {
@@ -213,33 +298,23 @@ function webPackResource({
         output: { filename },
         plugins,
     }, webpack))
-        .pipe(gulp.dest(`${dstResourcesDir}/site/assets/js/`));
+        .pipe(Gulp.dest(`${dstResourcesDir}/site/assets/js/`));
     if(liveReload) { stream = stream.pipe($.livereload()); }
     if(env === 'dev') {
-        stream = stream.pipe(gulp.dest('./dist/js/'));
+        stream = stream.pipe(Gulp.dest('./dist/js/'));
         if(liveReload) { stream = stream.pipe($.livereload()); }
     }
     return stream;
 }
 
-// Must be syncronous, so task doesn't finish before webPack, thus return the stream:
-gulp.task(`prod:${mainBabelAssetFile}`,  () => { return webPackResource({ filePath: mainBabelAssetFile }); });
-gulp.task(`dev:${mainBabelAssetFile}`,   () => { return webPackResource({ filePath: mainBabelAssetFile, env: 'dev' }); });
-gulp.task(`watch:${mainBabelAssetFile}`, (done) => { webPackResource({ filePath: mainBabelAssetFile, env: 'dev', liveReload: true }); done(); });
-
-babelAssetFiles.forEach(babelAssetFile => {
-    gulp.task(`watch:${babelAssetFile}`, (done) => { gulp.start(`watch:${mainBabelAssetFile}`); done(); });
-});
-
 //──────────────────────────────────────────────────────────────────────────────
 // scss -> css
 //──────────────────────────────────────────────────────────────────────────────
-
 function compileScssFile({
     filePath,
-    env        = 'prod',
+    env        = isProd ? 'prod' : 'dev',
     sourcemaps = env === 'dev' ? false : true,
-    liveReload = false,
+    liveReload = isWatch,
     autoprefixerOptions = {
         browsers: ['last 2 versions', 'ie > 8'],
         cascade: false
@@ -248,44 +323,104 @@ function compileScssFile({
         includePaths: '..'
     }
 }) {
-    let stream = gulp.src(filePath);
+    let stream = Gulp.src(filePath);
     if(sourcemaps) { stream = stream.pipe($.sourcemaps.init()); }
     stream = stream.pipe($.sassGlob())
         .pipe($.sass(sassOptions).on('error', $.sass.logError))
         .pipe($.autoprefixer(autoprefixerOptions));
     if(sourcemaps) { stream = stream.pipe($.sourcemaps.write()); }
-    stream = stream.pipe(gulp.dest(`${dstSiteDir}/assets/css/`));
+    stream = stream.pipe(Gulp.dest(`${dstSiteDir}/assets/css/`));
     if(liveReload) { stream = stream.pipe($.livereload()); }
     if (env === 'dev') {
-        stream = stream.pipe(gulp.dest('./dist/css/'));
+        stream = stream.pipe(Gulp.dest('./dist/css/'));
         if(liveReload) { stream = stream.pipe($.livereload()); }
     }
     // $.livereload.changed(`${dest}/styles.css`');
     return stream;
 }
 
-gulp.task(`prod:${mainScssFile}`,  () => { compileScssFile({ filePath: mainScssFile }); });
-gulp.task(`dev:${mainScssFile}`,   () => { compileScssFile({ filePath: mainScssFile, env: 'dev' }); });
-// Must be syncronous, so scssWatchTasks don't complete before them, thus return the stream:
-gulp.task(`watch:${mainScssFile}`, () => { return compileScssFile({ filePath: mainScssFile, env: 'dev', liveReload: true }); });
-
-scssFiles.forEach(scssFile => {
-    gulp.task(`watch:${scssFile}`, (done) => { gulp.start(`watch:${mainScssFile}`); done(); });
+//──────────────────────────────────────────────────────────────────────────────
+// Node modules used server-side
+//──────────────────────────────────────────────────────────────────────────────
+//let seenNodeModules = new Set();
+config.node.serverSide.forEach(moduleName => {
+    // TODO: Find dependencies
+    const srcRelDir       = `${srcNodeModulesRelDir}/${moduleName}`; // TODO: Fail if srcRelDir does not exist
+    const glob            = `${srcRelDir}/**/*.{js,json}`;
+    const srcRelFilePaths = Glob.sync(`${srcRelDir}/**/*.{js,json}` , { absolute: false });
+    dstAbsFilePaths.set(`${__dirname}/${dstResourcesDir}/lib/${moduleName}`, {
+        action: 'node',
+        dstShortFilePath: `lib/${moduleName}`,
+        glob
+    });
+    srcRelFilePaths.forEach(srcRelFilePath => {
+      const dstShortFilePath = srcRelFilePath.replace(srcNodeModulesRelDir, dstNodeModulesRelDir).replace(`${dstResourcesDir}/`, '');
+      Gulp.task(`${dstShortFilePath}`, () => {
+          copyResource({ filePath: srcRelFilePath, base: srcNodeModulesRelDir, dest: dstNodeModulesRelDir });
+      });
+      Gulp.task(`${srcRelFilePath}`, () => {
+          Gulp.start(dstShortFilePath);
+      });
+    });
 });
+
+//──────────────────────────────────────────────────────────────────────────────
+// Define tasks from dstAbsFilePaths
+//──────────────────────────────────────────────────────────────────────────────
+dstAbsFilePaths.forEach((v, dstAbsFilePath) => {
+    if(v.action === 'watch') {
+        Gulp.task(`${v.srcShortFilePath}`, [v.depend]);
+    } else {
+        Gulp.task(`${v.dstShortFilePath}`, () => {
+            switch (v.action) {
+                case 'copy':        copyResource({ filePath: v.srcRelFilePath }); break;
+                case 'transpile':   transpileResource({ filePath: v.srcRelFilePath }); break;
+                case 'webpack':     webPackResource({ filePath: v.srcRelFilePath }); break;
+                case 'compileScss': compileScssFile({ filePath: v.srcRelFilePath }); break;
+                case 'node':        copyResource({ filePath: v.glob, base: srcNodeModulesRelDir, dest: dstNodeModulesRelDir }); break;
+                default: console.log(`Unhandeled file: ${v.srcRelFilePath}`);
+            }
+        }); // Gulp.task
+        //if(v.action !== 'node') {
+            Gulp.task(`${v.srcRelFilePath}`, () => {
+                Gulp.start(v.dstShortFilePath);
+            }); // for watch
+        //}
+    }
+}); // dstAbsFilePaths.forEach
+//console.log(dstAbsFilePaths); //process.exit();
+
+//──────────────────────────────────────────────────────────────────────────────
+// Task dependencies
+//──────────────────────────────────────────────────────────────────────────────
+const prodTasks = [...dstAbsFilePaths.values()].filter(d => d.action !== 'watch').map(d => d.dstShortFilePath);
+const devTasks = prodTasks;
+const watchFiles = allFiles;
+//const watchFiles = [...dstAbsFilePaths.values()].map(d => d.srcRelFilePath);
+//console.log(watchFiles); process.exit();
 
 //──────────────────────────────────────────────────────────────────────────────
 // Main tasks:
 //──────────────────────────────────────────────────────────────────────────────
-
-gulp.task('prod', prodTasks);
-
-gulp.task('dev', devTasks);
-
-gulp.task('watch', devTasks, () => {
-    $.livereload({ start: true });
-    app.all(/^(?!\/dist).*$/, (req, res) => proxy.web(req, res, { target: enonic }));
-    app.use(express.static(__dirname)).listen(expressPort);
-    gulp.watch(watchFiles, event => { gulp.start('watch:' + event.path); });
+Gulp.task('prod', () => {
+    prodTasks.forEach(dstShortFilePath => {
+        Gulp.start(dstShortFilePath);
+    });
 });
 
-gulp.task('default', ['prod']);
+Gulp.task('dev', () => {
+    devTasks.forEach(dstShortFilePath => {
+        Gulp.start(dstShortFilePath);
+    });
+});
+
+Gulp.task('watch', ['dev'], () => {
+    $.livereload({ start: true });
+    app.all(/^(?!\/dist).*$/, (req, res) => proxy.web(req, res, { target: config.enonic }));
+    app.use(express.static(__dirname)).listen(config.expressPort);
+    Gulp.watch(watchFiles, event => {
+        Gulp.start(event.path.replace(`${__dirname}/`, ''));
+    });
+});
+
+Gulp.task('default', ['prod']);
