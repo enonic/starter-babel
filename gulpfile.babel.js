@@ -233,6 +233,9 @@ function transpileResource({
     liveReload   = isWatch,
     env          = isProd ? 'prod' : 'dev',
     plumber      = env === 'dev' ? true : false,
+    comments     = env === 'dev' ? true : false,
+    compact      = env === 'dev' ? false : true,
+    minified     = env === 'dev' ? false : true,
     plugins      = [],
     presets      = [
         [
@@ -242,16 +245,10 @@ function transpileResource({
         ],
         'react'
     ],
-    babelOptions = env === 'dev' ? {
-        comments: true,
-        compact:  false,
-        minified: false,
-        plugins,
-        presets
-    } : {
-        comments: false,
-        compact:  true,
-        minified: true,
+    babelOptions = {
+        comments,
+        compact,
+        minified,
         plugins,
         presets
     }
@@ -283,13 +280,7 @@ function webPackResource({
         ],
         'react'
     ],
-    babelOptions  = env === 'dev' ? {
-        comments: babelComments,
-        compact,
-        minified,
-        plugins: babelPlugins,
-        presets
-    } : {
+    babelOptions  = {
         comments: babelComments,
         compact,
         minified,
