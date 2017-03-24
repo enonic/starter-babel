@@ -200,8 +200,8 @@ allFiles.forEach(srcRelFilePath => {
         //case config.regexp.nodeModules.test(srcRelFilePath): break; // Node modules are handeled seperately
 
         // Unhandeled leftovers, warn on watch
-        //case /\//.test(srcRelFilePath): console.log('What do do with this file is not defined:' + srcRelFilePath); break; // Any left over files in folders
-        default: console.log(srcRelFilePath); // Files in root
+        //case /\//.test(srcRelFilePath): console.log(`What do do with this file is not defined: ${srcRelFilePath}`); break; // Any left over files in folders
+        default: console.log(`What do do with this file is not defined: ${srcRelFilePath}`); // Files in root
     }
 });
 
