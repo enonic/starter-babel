@@ -38,6 +38,7 @@
     "deploy": "npm run install-app;",
     "doctoc": "./node_modules/.bin/doctoc --github ./README.md",
     "gulp": "./node_modules/.bin/gulp",
+    "gulp:tasks": "./node_modules/.bin/gulp --tasks-simple;",
     "gulper": "./node_modules/.bin/gulper",
     "gdev": "npm run gulp dev;",
     "gprod": "npm run gulp prod;",
