@@ -233,16 +233,24 @@ function transpileResource({
     liveReload   = isWatch,
     env          = isProd ? 'prod' : 'dev',
     plumber      = env === 'dev' ? true : false,
+    presets      = [
+        [
+            'es2015', {
+                loose: true
+            }
+        ],
+        'react'
+    ],
     babelOptions = env === 'dev' ? {
         comments: true,
         compact:  false,
         minified: false,
-        presets:  ['es2015', 'react']
+        presets
     } : {
         comments: false,
         compact:  true,
         minified: true,
-        presets:  ['es2015', 'react']
+        presets
     }
 }) {
     let stream = Gulp.src(filePath, { base });
@@ -263,7 +271,14 @@ function webPackResource({
     babelComments = env === 'dev' ? true : false,
     compact       = env === 'dev' ? false : true,
     minified      = env === 'dev' ? false : true,
-    presets       = ['es2015', 'react'],
+    presets       = [
+        [
+            'es2015', {
+                loose: true
+            }
+        ],
+        'react'
+    ],
     babelOptions  = env === 'dev' ? {
         comments: babelComments,
         compact,
