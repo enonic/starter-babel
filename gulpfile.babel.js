@@ -267,7 +267,7 @@ prodTasks.add(mainBabelAssetDst);
 
 Glob.sync(`${srcResourcesDir}/**/*.${config.glob.extentions.copy}`).forEach(srcRelFilePath => {
     const dstRelFilePath = srcRelFilePath.replace(srcResourcesDir, dstResourcesDir);
-    console.log('copy      srcRelFilePath:', srcRelFilePath, ' dstRelFilePath:', dstRelFilePath);
+    //console.log('copy      srcRelFilePath:', srcRelFilePath, ' dstRelFilePath:', dstRelFilePath);
     Gulp.task(dstRelFilePath, () => {
         copyResource({ filePath: srcRelFilePath });
     });
@@ -281,7 +281,7 @@ Glob.sync(`${srcResourcesDir}/**/*.${config.glob.extentions.copy}`).forEach(srcR
 
 Glob.sync(`${srcResourcesDir}/**/*.${config.glob.extentions.scss}`).forEach(srcRelFilePath => {
     const dstRelFilePath = mainScssDst;
-    console.log('scss      srcRelFilePath:', srcRelFilePath, ' dstRelFilePath:', dstRelFilePath);
+    //console.log('scss      srcRelFilePath:', srcRelFilePath, ' dstRelFilePath:', dstRelFilePath);
     Gulp.task(srcRelFilePath, () => {
         Gulp.start(dstRelFilePath);
     });
@@ -290,7 +290,7 @@ Glob.sync(`${srcResourcesDir}/**/*.${config.glob.extentions.scss}`).forEach(srcR
 
 Glob.sync(`${srcResourcesDir}/**/*.${config.glob.extentions.transpile}`).forEach(srcRelFilePath => {
     const dstRelFilePath = srcRelFilePath.replace(srcResourcesDir, dstResourcesDir);
-    console.log('transpile srcRelFilePath:', srcRelFilePath, ' dstRelFilePath:', dstRelFilePath);
+    //console.log('transpile srcRelFilePath:', srcRelFilePath, ' dstRelFilePath:', dstRelFilePath);
     Gulp.task(dstRelFilePath, () => {
         transpileResource({ filePath: srcRelFilePath });
     });
@@ -304,7 +304,7 @@ Glob.sync(`${srcResourcesDir}/**/*.${config.glob.extentions.transpile}`).forEach
 
 Glob.sync(`${srcResourcesDir}/**/*.${config.glob.extentions.webpack}`).forEach(srcRelFilePath => {
     const dstRelFilePath = mainBabelAssetDst;
-    console.log('webpack   srcRelFilePath:', srcRelFilePath, ' dstRelFilePath:', dstRelFilePath);
+    //console.log('webpack   srcRelFilePath:', srcRelFilePath, ' dstRelFilePath:', dstRelFilePath);
     Gulp.task(srcRelFilePath, () => {
         Gulp.start(dstRelFilePath);
     });
