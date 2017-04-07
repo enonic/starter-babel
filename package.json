@@ -25,6 +25,7 @@
     "http-proxy": "^1.16.2",
     "mocha": "^3.2.0",
     "sinon": "^2.1.0",
+    "touch": "^1.0.0",
     "webpack-uglify-js-plugin": "^1.1.9",
     "yarn": "^0.18.1"
   },
