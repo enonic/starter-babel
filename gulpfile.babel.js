@@ -22,6 +22,8 @@
  - short paths in STDOUT
  - prod and dev tasks are destination files.
  - watch tasks are source files, which depends on source files.
+ - Globbing all files with ignore(blacklist) to create whitelist is slow,
+    so lets use as small globs as possible instead.
 
  Node modules:
  - Only copy modules listed in config (and in the future their dependencies)
@@ -38,15 +40,6 @@ const config = {
     mainScss:       'src/main/resources/assets/styles.scss',
     mainBabelAsset: 'src/main/resources/assets/scripts.asset.es6',
 
-    regexp: {
-        //ignore:      /^$/,
-        copy:        /^src\/.*\.(html|xml)$/,
-        scss:        /^src\/.*\.scss$/,
-        webpack:     /^src\/.*asset.*\.es6$/,
-        transpile:   /^src\/.*\.es6$/,
-        nodeModules: /^node_modules\/.*\.(js|json)$/,
-    },
-
     node: {
       serverSide: [
         'moment'
@@ -54,35 +47,13 @@ const config = {
     },
 
     glob: {
-        ignore: [
-            '.babelrc',
-            '.editorconfig',
-            '.gitignore',
-            '.node-version',
-            '.sass-lint.yml',
-            '.yarnclean',
-            'build.gradle',
-            'gradle.properties',
-            'gradlew',
-            'gradlew.bat',
-            'gulpfile.babel.js', // gulper restarts on change of this file
-            'npm-debug.log',
-            'package.json',
-            'LICENSE',
-            'LICENSE.txt',
-            'README.md',
-            'yarn.lock',
-            '.git/**/*',
-            '.gradle/**/*',
-            'build/**/*',
-            'dist/**/*',
-            'gradle/**/*',
-            'node_modules/**/*', // Node modules are handeled seperately
-            //'node_modules/**/*.!(js|json)', // Files that are not js or json
-            //'node_modules/**/!(*.*)', // Files without extention
-            'src/main/java/**/*',
-            '**/*.gitkeep'
-        ]
+        extentions: {
+            copy:        '{html,jpeg,properties,png,svg,ttf,xml,xsl,woff}',
+            scss:        'scss',
+            webpack:     'asset.es6',
+            transpile:   'es6',
+            nodeModules: '{js,json}'
+        }
     }
 };
 
@@ -109,6 +80,7 @@ const srcResourcesDir      = 'src/main/resources';
 
 const dstResourcesDir      = 'build/resources/main';
 const dstSiteDir           = `${dstResourcesDir}/site`;
+const dstAssetsDir         = `${dstSiteDir}/assets`;
 const dstNodeModulesRelDir = `${dstResourcesDir}/lib`;
 
 const isProd               = $.util.env._.includes('prod');
@@ -124,86 +96,6 @@ $.util.log = function() {
         return origLog.apply(this, arguments);
     }
 };*/
-
-const allFiles = Glob.sync('**/*', {
-    absolute: false,
-    dot: true, // Include hidden files
-    ignore: config.glob.ignore,
-    nodir: true
-});
-//console.log(allFiles); process.exit();
-
-let dstAbsFilePaths = new Map();
-allFiles.forEach(srcRelFilePath => {
-    const srcAbsFilePath   = Glob.sync(srcRelFilePath, { absolute: true })[0]; // Note: Glob does not work on files that don't exist yet...
-    const dstShortFilePath = srcRelFilePath.replace(`${srcResourcesDir}/`, '');
-    const dstRelFilePath   = `${dstResourcesDir}/${dstShortFilePath}`;
-    const dstAbsFilePath   = srcAbsFilePath.replace(srcResourcesDir, dstResourcesDir);
-
-    switch (true) {
-        //case config.regexp.ignore.test(srcRelFilePath): break;
-
-        case config.regexp.copy.test(srcRelFilePath):
-            dstAbsFilePaths.set(dstAbsFilePath, {
-                action: 'copy',
-                dstRelFilePath,
-                dstShortFilePath,
-                srcRelFilePath
-            });
-            break;
-
-        case config.mainScss === srcRelFilePath:
-            dstAbsFilePaths.set(dstAbsFilePath.replace(/scss$/, 'css'), {
-                action: 'compileScss',
-                dstRelFilePath: dstRelFilePath.replace(/scss$/, 'css'),
-                dstShortFilePath: dstShortFilePath.replace(/scss$/, 'css'),
-                srcRelFilePath
-            });
-            break;
-
-        case config.regexp.scss.test(srcRelFilePath):
-            dstAbsFilePaths.set(dstAbsFilePath, {
-                action: 'watch',
-                depend: config.mainScss.replace(`${srcResourcesDir}/`, '').replace(/scss$/, 'css'),
-                srcRelFilePath,
-                srcShortFilePath: srcRelFilePath.replace(`${srcResourcesDir}/`, '')
-            });
-            break;
-
-        case config.mainBabelAsset === srcRelFilePath:
-            dstAbsFilePaths.set(dstAbsFilePath.replace(/asset.es6$/, 'js'), {
-                action: 'webpack',
-                dstRelFilePath: dstRelFilePath.replace(/asset.es6$/, 'js'),
-                dstShortFilePath: dstShortFilePath.replace(/asset.es6$/, 'js'),
-                srcRelFilePath
-            });
-            break;
-
-        case config.regexp.webpack.test(srcRelFilePath):
-            dstAbsFilePaths.set(dstAbsFilePath, {
-                action: 'watch',
-                depend: config.mainBabelAsset.replace(`${srcResourcesDir}/`, '').replace(/asset.es6$/, 'js'),
-                srcRelFilePath,
-                srcShortFilePath: srcRelFilePath.replace(`${srcResourcesDir}/`, '')
-            });
-            break;
-
-        case config.regexp.transpile.test(srcRelFilePath):
-            dstAbsFilePaths.set(dstAbsFilePath.replace(/es6$/, 'js'), {
-                action: 'transpile',
-                dstRelFilePath: dstRelFilePath.replace(/es6$/, 'js'),
-                dstShortFilePath: dstShortFilePath.replace(/es6$/, 'js'),
-                srcRelFilePath
-            });
-            break;
-
-        //case config.regexp.nodeModules.test(srcRelFilePath): break; // Node modules are handeled seperately
-
-        // Unhandeled leftovers, warn on watch
-        //case /\//.test(srcRelFilePath): console.log(`What do do with this file is not defined: ${srcRelFilePath}`); break; // Any left over files in folders
-        default: console.log(`What do do with this file is not defined: ${srcRelFilePath}`); // Files in root
-    }
-});
 
 //──────────────────────────────────────────────────────────────────────────────
 // xml, html, svg, etc...
@@ -353,77 +245,100 @@ function compileScssFile({
 }
 
 //──────────────────────────────────────────────────────────────────────────────
-// Node modules used server-side
+// Generate tasks and watchFiles
 //──────────────────────────────────────────────────────────────────────────────
-//let seenNodeModules = new Set();
-config.node.serverSide.forEach(moduleName => {
-    // TODO: Find dependencies
-    const srcRelDir       = `${srcNodeModulesRelDir}/${moduleName}`; // TODO: Fail if srcRelDir does not exist
-    const glob            = `${srcRelDir}/**/*.{js,json}`;
-    const srcRelFilePaths = Glob.sync(`${srcRelDir}/**/*.{js,json}` , { absolute: false });
-    dstAbsFilePaths.set(`${__dirname}/${dstResourcesDir}/lib/${moduleName}`, {
-        action: 'node',
-        dstShortFilePath: `lib/${moduleName}`,
-        glob
+let prodTasks  = new Set();
+let watchFiles = new Set();
+
+const mainScssDst       = config.mainScss.replace(/.*\//, `${dstAssetsDir}/css/`).replace(/scss$/, 'css');
+const mainBabelAssetDst = config.mainBabelAsset.replace(/.*\//, `${dstAssetsDir}/js/`).replace(/asset.es6$/, 'js');
+//console.log('mainScssDst:', mainScssDst); //process.exit();
+//console.log('mainBabelAssetDst:', mainBabelAssetDst); //process.exit();
+
+Gulp.task(mainScssDst, () => {
+    compileScssFile({ filePath: config.mainScss });
+});
+prodTasks.add(mainScssDst);
+
+Gulp.task(mainBabelAssetDst, () => {
+    webPackResource({ filePath: config.mainBabelAsset });
+});
+prodTasks.add(mainBabelAssetDst);
+
+Glob.sync(`${srcResourcesDir}/**/*.${config.glob.extentions.copy}`).forEach(srcRelFilePath => {
+    const dstRelFilePath = srcRelFilePath.replace(srcResourcesDir, dstResourcesDir);
+    console.log('copy      srcRelFilePath:', srcRelFilePath, ' dstRelFilePath:', dstRelFilePath);
+    Gulp.task(dstRelFilePath, () => {
+        copyResource({ filePath: srcRelFilePath });
     });
-    srcRelFilePaths.forEach(srcRelFilePath => {
-      const dstShortFilePath = srcRelFilePath.replace(srcNodeModulesRelDir, dstNodeModulesRelDir).replace(`${dstResourcesDir}/`, '');
-      Gulp.task(`${dstShortFilePath}`, () => {
-          copyResource({ filePath: srcRelFilePath, base: srcNodeModulesRelDir, dest: dstNodeModulesRelDir });
-      });
-      Gulp.task(`${srcRelFilePath}`, () => {
-          Gulp.start(dstShortFilePath);
-      });
+    prodTasks.add(dstRelFilePath);
+
+    Gulp.task(srcRelFilePath, () => {
+        Gulp.start(dstRelFilePath);
     });
+    watchFiles.add(srcRelFilePath);
 });
 
-//──────────────────────────────────────────────────────────────────────────────
-// Define tasks from dstAbsFilePaths
-//──────────────────────────────────────────────────────────────────────────────
-dstAbsFilePaths.forEach((v, dstAbsFilePath) => {
-    if(v.action === 'watch') {
-        Gulp.task(`${v.srcShortFilePath}`, [v.depend]);
-    } else {
-        Gulp.task(`${v.dstShortFilePath}`, () => {
-            switch (v.action) {
-                case 'copy':        copyResource({ filePath: v.srcRelFilePath }); break;
-                case 'transpile':   transpileResource({ filePath: v.srcRelFilePath }); break;
-                case 'webpack':     webPackResource({ filePath: v.srcRelFilePath }); break;
-                case 'compileScss': compileScssFile({ filePath: v.srcRelFilePath }); break;
-                case 'node':        copyResource({ filePath: v.glob, base: srcNodeModulesRelDir, dest: dstNodeModulesRelDir }); break;
-                default: console.log(`Unhandeled file: ${v.srcRelFilePath}`);
-            }
-        }); // Gulp.task
-        //if(v.action !== 'node') {
-            Gulp.task(`${v.srcRelFilePath}`, () => {
-                Gulp.start(v.dstShortFilePath);
-            }); // for watch
-        //}
-    }
-}); // dstAbsFilePaths.forEach
-//console.log(dstAbsFilePaths); //process.exit();
+Glob.sync(`${srcResourcesDir}/**/*.${config.glob.extentions.scss}`).forEach(srcRelFilePath => {
+    const dstRelFilePath = mainScssDst;
+    console.log('scss      srcRelFilePath:', srcRelFilePath, ' dstRelFilePath:', dstRelFilePath);
+    Gulp.task(srcRelFilePath, () => {
+        Gulp.start(dstRelFilePath);
+    });
+    watchFiles.add(srcRelFilePath);
+});
 
-//──────────────────────────────────────────────────────────────────────────────
-// Task dependencies
-//──────────────────────────────────────────────────────────────────────────────
-const prodTasks = [...dstAbsFilePaths.values()].filter(d => d.action !== 'watch').map(d => d.dstShortFilePath);
+Glob.sync(`${srcResourcesDir}/**/*.${config.glob.extentions.transpile}`).forEach(srcRelFilePath => {
+    const dstRelFilePath = srcRelFilePath.replace(srcResourcesDir, dstResourcesDir);
+    console.log('transpile srcRelFilePath:', srcRelFilePath, ' dstRelFilePath:', dstRelFilePath);
+    Gulp.task(dstRelFilePath, () => {
+        transpileResource({ filePath: srcRelFilePath });
+    });
+    prodTasks.add(dstRelFilePath);
+
+    Gulp.task(srcRelFilePath, () => {
+        Gulp.start(dstRelFilePath);
+    });
+    watchFiles.add(srcRelFilePath);
+});
+
+Glob.sync(`${srcResourcesDir}/**/*.${config.glob.extentions.webpack}`).forEach(srcRelFilePath => {
+    const dstRelFilePath = mainBabelAssetDst;
+    console.log('webpack   srcRelFilePath:', srcRelFilePath, ' dstRelFilePath:', dstRelFilePath);
+    Gulp.task(srcRelFilePath, () => {
+        Gulp.start(dstRelFilePath);
+    });
+    watchFiles.add(srcRelFilePath);
+});
+
+config.node.serverSide.forEach(m => {
+    const prodTask = `${dstNodeModulesRelDir}/${m}`;
+    Gulp.task(prodTask, () => {
+        const files = Glob.sync(`${srcNodeModulesRelDir}/${m}/**/*.${config.glob.extentions.nodeModules}`, { absolute: true });
+        copyResource({ filePath: files, base: srcNodeModulesRelDir, dest: dstNodeModulesRelDir });
+    });
+    prodTasks.add(prodTask);
+    // NOTE: You're not supposed to change files in node_modules, so lets not watch them
+});
+
+prodTasks = [...prodTasks];
+//console.log('prodTasks:', prodTasks); //process.exit();
 const devTasks = prodTasks;
-const watchFiles = allFiles;
-//const watchFiles = [...dstAbsFilePaths.values()].map(d => d.srcRelFilePath);
-//console.log(watchFiles); process.exit();
+watchFiles = [...watchFiles];
+//console.log('watchFiles:', watchFiles); //process.exit();
 
 //──────────────────────────────────────────────────────────────────────────────
 // Main tasks:
 //──────────────────────────────────────────────────────────────────────────────
 Gulp.task('prod', () => {
-    prodTasks.forEach(dstShortFilePath => {
-        Gulp.start(dstShortFilePath);
+    prodTasks.forEach(dstRelFilePath => {
+        Gulp.start(dstRelFilePath);
     });
 });
 
 Gulp.task('dev', () => {
-    devTasks.forEach(dstShortFilePath => {
-        Gulp.start(dstShortFilePath);
+    devTasks.forEach(dstRelFilePath => {
+        Gulp.start(dstRelFilePath);
     });
 });
 
