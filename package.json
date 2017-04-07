@@ -38,7 +38,7 @@
   },
   "scripts": {
     "build": "./gradlew build;",
-    "clean": "./gradlew clean;",
+    "clean": "rm -r build dist 2>/dev/null; true;",
     "deploy": "npm run install-app;",
     "doctoc": "./node_modules/.bin/doctoc --github ./README.md",
     "gulp": "./node_modules/.bin/gulp",
