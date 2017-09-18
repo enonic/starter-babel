@@ -42,9 +42,7 @@ dependencies {
 repositories {
     mavenLocal()
     jcenter()
-    maven {
-        url 'http://repo.enonic.com/public'
-    }
+    xp.enonicRepo()
 }
 
 task babelJs(type: NodeTask, dependsOn: 'npmInstall') {
