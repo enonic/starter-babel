@@ -1,24 +1,16 @@
-buildscript {
-    repositories {
-        mavenLocal()
-        jcenter()
-        maven {
-            url 'http://repo.enonic.com/public'
-        }
-    }
-
-    dependencies {
-        classpath "com.enonic.xp:gradle-plugin:${xpVersion}"
-        classpath "com.moowork.gradle:gradle-node-plugin:0.11"
-    }
+plugins {
+    id 'java'
+    id 'com.enonic.xp.app' version '1.0.11'
+    id 'com.moowork.node' version '1.2.0'
 }
 
-apply plugin: 'com.enonic.xp.app'
-apply plugin: 'com.moowork.node'
+xp {
+  version = xpVersion
+}
 
 app {
-    name = project.appName
-    displayName = project.displayName
+    name = project.ext.appName
+    displayName = project.ext.displayName
     vendorName = 'Enonic USA'
     vendorUrl = 'http://enonic.com'
 }
