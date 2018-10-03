@@ -2,23 +2,25 @@
 
 ## Use ES2015 (ES6) as well as React with JSX
 
-Some web browsers, and the Java 8 Nashorn JavaScript engine, do not support ES6 without a transpiler like [Babel](https://babeljs.io/). The purpose of this starter kit is to enable the use of ES6 and/or JSX in XP applications. This starter kit contains a webjar dependency that will download the [React](https://facebook.github.io/react/) files when the app is built. It also contains the required folder structure for creating an app to run on Enonic XP. 
+Some web browsers, and the Java 8 Nashorn JavaScript engine, do not support ES6 without a transpiler like [Babel](https://babeljs.io/). The purpose of this starter kit is to enable the use of ES6 and/or JSX in XP applications. This starter kit contains a webjar dependency that will download the [React](https://reactjs.org/) files when the app is built. It also contains the required folder structure for creating an app to run on Enonic XP. 
 
 ## How it works
 
-This project's build.gradle file contains a task that will transpile ES6 files with the `.es6` extension into ES5 files with the `.js` extension. It will also transpile JSX files with the `.jsx` extension into ES5 files that end in `.js`. For example, if a part is named "my-part" then the controller should be named `my-part.es6` and it will be transpiled into `my-part.js`. The transpiled files can be found in the project's `build` folder. 
+This project's `build.gradle` file contains a task that will transpile JS files with extension, different from the default `.js`, e.g. `.es6` or `.jsx`. For example, if a part is named "my-part" then the controller should be named `my-part.es6` and it will be transpiled into `my-part.js`. The transpiled files can be found in the project's `build` folder. 
 
-All references to `.es6` and `.jsx` files should use the `.js` extension. For example, a client side file named `utilities.es6` would be included in a script element like this: `src="utilities.js"`
-
-Files cannot contain both ES6 and JSX.
+All references to `.es6` and `.jsx` files should use the `.js` extension. For example, a client side file named `utilities.es6` would be included in a script element like this: `src="utilities.js"`.
 
 To use React in the project, include the react.min.js and react-dom.min.js files with a `<script>` element in your page. These files are included by the webjar dependency. You won't see these files in your project's `assets` folder, but they will be accessible at `/src/main/resources/assets/react/0.14.7/`.
 
 If React and JSX will not be used in your project, simply make the following edits to the build.gradle file: remove the reference to the React webjar dependency and remove references to `.jsx` and `react` in the babelJs task. Also remove the line with `babel-preset-react` in the package.json file.
 
+## Target environment
+
+The target environment is set to ES5 (that is supported by node.js v0.12.0). If you want to transpile the client side files only, you can change the taget environment in [.browserslistrc](.browserslistrc). For more information, read the official Browserslist [documentation](https://github.com/browserslist/browserslist#browserslist-). Enviroment list can be tested [here](https://browserl.ist/).
+
 ## App development with continuous transpile
 
-Even when XP is started in dev-mode, transpiling does not occur upon changes to `.es6` or `.jsx` files. But these files can be watched so that the `babelJs` task will be run automatically. Open the terminal and enter `./gradlew -Pwatch babelJs`. There should be at least one change in a watched file before running the task with `-Pwatch` or else the task may complete and stop watching as expected.
+Even when XP is started in dev-mode, transpiling does not occur upon changes to `.es6` or `.jsx` files. But these files can be watched so that the `babelJs` task will be run automatically. Open the terminal and enter `./gradlew babelJs -Pwatch`. There should be at least one change in a watched file before running the task with `-Pwatch` or else the task may complete and stop watching as expected.
 
 ## Installation
 
@@ -53,6 +55,6 @@ webjar "org.webjars:react:0.14.7"
 
 ## Copyright and license
 
-This software is licensed under [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
-Babel Code released under [the MIT license](https://github.com/babel/babel/blob/master/LICENSE).
+This software is licensed under [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).<br/>
+Babel Code released under [the MIT license](https://github.com/babel/babel/blob/master/LICENSE).<br/>
 React is released under the [BSD license](https://github.com/facebook/react/blob/master/LICENSE).

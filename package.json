@@ -1,9 +1,14 @@
 {
-  "name": "my-project",
+  "name": "starter-babel",
   "version": "1.0.0",
+  "scripts": {
+    "build": "babel src/main/resources --out-dir build/resources/main --ignore \"**/*.js\"",
+    "dev": "babel src/main/resources --out-dir build/resources/main --ignore \"**/*.js\" --watch"
+  },
   "devDependencies": {
-    "babel-cli": "^6.0.0",
-    "babel-preset-env": "^1.6.1",
-    "babel-preset-react": "^6.5.0"
+    "@babel/cli": "^7.1.2",
+    "@babel/core": "^7.1.2",
+    "@babel/preset-env": "^7.1.0",
+    "@babel/preset-react": "^7.0.0"
   }
 }
