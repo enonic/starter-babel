@@ -44,6 +44,7 @@ $ toolbox.bat init-project -d C:\path\to\project\directory -n com.company.myapp 
 | 1.1.0         | 6.4.0 -  |
 | 1.2.0         | 6.12.0+ |
 | 1.3.0         | 6.12.0+ |
+| 1.4.0         | 6.15.0+ |
 
 ## WebJars
 
