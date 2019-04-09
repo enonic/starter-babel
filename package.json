@@ -1,6 +1,6 @@
 {
   "name": "starter-babel",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "scripts": {
     "build": "babel src/main/resources --out-dir build/resources/main --ignore \"**/*.js\"",
     "dev": "babel src/main/resources --out-dir build/resources/main --ignore \"**/*.js\" --watch"
