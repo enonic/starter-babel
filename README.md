@@ -22,19 +22,35 @@ The target environment is set to ES5 (that is supported by node.js v0.12.0). If 
 
 Even when XP is started in dev-mode, transpiling does not occur upon changes to `.es6` or `.jsx` files. But these files can be watched so that the `babelJs` task will be run automatically. Open the terminal and enter `./gradlew babelJs -Pwatch`. There should be at least one change in a watched file before running the task with `-Pwatch` or else the task may complete and stop watching as expected.
 
-## Installation
 
-To initialize an app based on this starter kit, run the following command from the XP installation's toolbox folder (for more info on project initialization, read [the documentation for init-project](http://xp.readthedocs.org/en/stable/reference/toolbox/init-project.html)).
+## Usage XP 7
 
-OSX/Linux
-```shell
-$ ./toolbox.sh init-project -d /path/to/project/directory -n com.company.myapp -r starter-babel
+You first need to install [Enonic CLI](https://developer.enonic.com/docs/enonic-cli/) and choose _starter-babel_ from the list of starters when asked. Then run the following commands to build and deploy it:
+
+```bash
+~ $ enonic project create
+... Answer wizard question
+
+~ $ cd <project-folder>
+~/new-project $ enonic project deploy
 ```
 
-Windows
-```shell
-$ toolbox.bat init-project -d C:\path\to\project\directory -n com.company.myapp -r starter-babel
+Your brand new app should now be up and running on http://localhost:8080
+
+
+## For XP 6.x users
+
+
+### Initialize project
+
+To get started, use the `toolbox` script to initiate your project:
+
+```bash
+~ $ mkdir new-project
+~ $ cd new-project
+~/new-project $ [$XP_INSTALL]/toolbox/toolbox.sh init-project -n com.example.name -r starter-babel
 ```
+
 
 ## Compatibility
 
