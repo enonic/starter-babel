@@ -16,7 +16,7 @@ If React and JSX will not be used in your project, simply make the following edi
 
 ## Target environment
 
-The target environment is set to ES5 (that is supported by node.js v0.12.0). If you want to transpile the client side files only, you can change the taget environment in [.browserslistrc](.browserslistrc). For more information, read the official Browserslist [documentation](https://github.com/browserslist/browserslist#browserslist-). Enviroment list can be tested [here](https://browserl.ist/).
+The target environment is set to ES5 (that is supported by node.js v0.12.0). If you want to transpile the client side files only, you can change the target environment in [.browserslistrc](.browserslistrc). For more information, read the official Browserslist [documentation](https://github.com/browserslist/browserslist#browserslist-). Enviroment list can be tested [here](https://browserl.ist/).
 
 ## App development with continuous transpile
 
